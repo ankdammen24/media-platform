@@ -10,6 +10,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   redis:
@@ -17,6 +19,24 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_prod_password_change_me
+      POSTGRES_DB: music_catalog
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,3 +51,6 @@ services:
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+volumes:
+  postgres_data:
