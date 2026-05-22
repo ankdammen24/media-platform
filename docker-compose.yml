@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile.api
     env_file:
       - ./music-catalog-core/.env
+    environment:
+      CORS_ORIGIN: ${FRONTEND_ORIGIN:-https://catalogusmusicus.mediarosenqvist.com}
     ports:
       - "3000:3000"
     depends_on:
@@ -46,8 +48,7 @@ services:
     build:
       context: ./soundloom-core
       args:
-        VITE_API_BASE_URL: https://api.mediarosenqvist.com
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://api.mediarosenqvist.com}
     ports:
       - "8080:8080"
     restart: unless-stopped
