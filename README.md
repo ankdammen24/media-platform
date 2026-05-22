@@ -45,6 +45,89 @@ git clone <soundloom-core-repo-url> soundloom-core
 
 You can also replace sibling folders with git submodules later if desired.
 
+## Internal Auth (Clerk-free) rollout
+
+This repository now assumes internal JWT + refresh-cookie auth in `music-catalog-core` and **no Clerk integration** in either app.
+
+Because app code is maintained in separate repositories, do the auth migration there:
+
+- Backend (`music-catalog-core`): add `users` table, `/auth/*` routes, JWT access tokens, refresh cookie, `requireAuth`, `requireRole`, admin seed/setup, and role checks.
+- Frontend (`soundloom-core`): add login page, in-memory access token handling, refresh flow, protected routes, user/role display, and logout.
+
+### Required auth env vars (backend repo)
+
+Set these in `music-catalog-core/.env`:
+
+```bash
+JWT_SECRET=
+JWT_EXPIRES_IN=15m
+REFRESH_TOKEN_SECRET=
+REFRESH_TOKEN_EXPIRES_IN=7d
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+ADMIN_DISPLAY_NAME=
+```
+
+### CORS/cookie expectations
+
+- Backend must allow frontend origin with `credentials: true`.
+- Refresh cookie policy:
+  - **dev/same-site**: `SameSite=Lax` (secure false on localhost)
+  - **prod/cross-site**: `SameSite=None` + `Secure=true`
+
+### Manual API checks (run against backend)
+
+```bash
+# register
+curl -i -X POST http://127.0.0.1:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"StrongPass123!","displayName":"Test User"}'
+
+# login (stores refresh cookie)
+curl -i -c cookies.txt -X POST http://127.0.0.1:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"StrongPass123!"}'
+
+# /auth/me with bearer token
+curl -i http://127.0.0.1:3000/auth/me \
+  -H "Authorization: Bearer <ACCESS_TOKEN>"
+
+# refresh using cookie
+curl -i -b cookies.txt -X POST http://127.0.0.1:3000/auth/refresh
+
+# logout
+curl -i -b cookies.txt -X POST http://127.0.0.1:3000/auth/logout
+```
+
+
+## Troubleshooting: `docker compose up --build` fails in API build
+
+If `api` image build fails on TypeScript errors under `music-catalog-core/src/...` (for example `TS2345 string | undefined` and role mismatch errors), the failure is coming from application code in **music-catalog-core**, not from this orchestration repo.
+
+Use this sequence from `/opt/media-platform`:
+
+```bash
+# 1) verify sibling app repos exist
+ls -la music-catalog-core soundloom-core
+
+# 2) update both repos to latest branch state
+./scripts/update-repos.sh
+
+# 3) run backend typecheck/build directly to see the same errors quickly
+cd music-catalog-core
+npm ci
+npm run build
+```
+
+Then fix the reported files inside `music-catalog-core` (e.g. `src/auth/requireAuth.ts`, `src/routes/*.routes.ts`) and rebuild the stack:
+
+```bash
+cd /opt/media-platform
+docker compose up --build -d
+```
+
+> Tip: if you need frontend-only iteration while backend code is being fixed, run frontend locally in `soundloom-core` and keep API disabled until backend TypeScript errors are resolved.
+
 ## Environment Setup
 
 1. Copy `.env.example` to `.env`:
@@ -53,7 +136,7 @@ You can also replace sibling folders with git submodules later if desired.
    cp .env.example .env
    ```
 
-2. Fill values as needed (especially `VITE_CLERK_PUBLISHABLE_KEY`).
+2. Fill values as needed.
 
 3. Ensure `music-catalog-core/.env` exists because the `api` service reads it via `env_file`.
 
@@ -130,14 +213,6 @@ Before deploying to production, review the deployment documentation:
 3. **[docs/QUICK_FIX_GUIDE.md](./docs/QUICK_FIX_GUIDE.md)** - Step-by-step fixes (90 min)
 4. **[docs/PRODUCTION_DEPLOYMENT_CHECKLIST.md](./docs/PRODUCTION_DEPLOYMENT_CHECKLIST.md)** - Full deployment procedures
 5. **[docs/DEPLOYMENT_INDEX.md](./docs/DEPLOYMENT_INDEX.md)** - Navigation guide
-
-**Critical issues to fix:**
-- Dockerfile.api references wrong project structure
-- PostgreSQL missing from docker-compose.yml
-- Environment files need to be created
-- Git repository structure needs clarification
-
-**Estimated time to production:** ~7-9 hours (2 hours for fixes + testing/deployment)
 
 ## Safety
 
