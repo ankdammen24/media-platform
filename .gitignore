@@ -26,3 +26,7 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+
+# Subproject repositories (cloned separately)
+music-catalog-core/
+soundloom-core/

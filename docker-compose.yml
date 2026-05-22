@@ -2,6 +2,7 @@ services:
   api:
     build:
       context: ./music-catalog-core
+      dockerfile: Dockerfile.api
     env_file:
       - ./music-catalog-core/.env
     ports:
