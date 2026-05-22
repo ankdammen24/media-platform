@@ -119,6 +119,26 @@ Example Nginx configs are provided:
 
 Nginx installation is not automated in this repo.
 
+## Production Deployment
+
+**⚠️ Status:** 4 critical issues identified, fixes documented.
+
+Before deploying to production, review the deployment documentation:
+
+1. **[DEPLOYMENT_README.md](./DEPLOYMENT_README.md)** - Overview and quick start
+2. **[docs/PRODUCTION_READINESS.md](./docs/PRODUCTION_READINESS.md)** - Issues and status
+3. **[docs/QUICK_FIX_GUIDE.md](./docs/QUICK_FIX_GUIDE.md)** - Step-by-step fixes (90 min)
+4. **[docs/PRODUCTION_DEPLOYMENT_CHECKLIST.md](./docs/PRODUCTION_DEPLOYMENT_CHECKLIST.md)** - Full deployment procedures
+5. **[docs/DEPLOYMENT_INDEX.md](./docs/DEPLOYMENT_INDEX.md)** - Navigation guide
+
+**Critical issues to fix:**
+- Dockerfile.api references wrong project structure
+- PostgreSQL missing from docker-compose.yml
+- Environment files need to be created
+- Git repository structure needs clarification
+
+**Estimated time to production:** ~7-9 hours (2 hours for fixes + testing/deployment)
+
 ## Safety
 
 - Do not commit secrets.
