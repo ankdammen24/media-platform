@@ -99,6 +99,35 @@ curl -i -b cookies.txt -X POST http://127.0.0.1:3000/auth/refresh
 curl -i -b cookies.txt -X POST http://127.0.0.1:3000/auth/logout
 ```
 
+
+## Troubleshooting: `docker compose up --build` fails in API build
+
+If `api` image build fails on TypeScript errors under `music-catalog-core/src/...` (for example `TS2345 string | undefined` and role mismatch errors), the failure is coming from application code in **music-catalog-core**, not from this orchestration repo.
+
+Use this sequence from `/opt/media-platform`:
+
+```bash
+# 1) verify sibling app repos exist
+ls -la music-catalog-core soundloom-core
+
+# 2) update both repos to latest branch state
+./scripts/update-repos.sh
+
+# 3) run backend typecheck/build directly to see the same errors quickly
+cd music-catalog-core
+npm ci
+npm run build
+```
+
+Then fix the reported files inside `music-catalog-core` (e.g. `src/auth/requireAuth.ts`, `src/routes/*.routes.ts`) and rebuild the stack:
+
+```bash
+cd /opt/media-platform
+docker compose up --build -d
+```
+
+> Tip: if you need frontend-only iteration while backend code is being fixed, run frontend locally in `soundloom-core` and keep API disabled until backend TypeScript errors are resolved.
+
 ## Environment Setup
 
 1. Copy `.env.example` to `.env`:
